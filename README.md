@@ -38,7 +38,7 @@ Open http://localhost:8080
 - [x] Flask backend and quiz frontend
 - [x] Docker, Docker Compose and nginx reverse proxy
 - [x] CI with GitHub Actions (tests, build, smoke test)
-- [ ] Push images to a registry
+- [x] Push images to a registry
 - [ ] PostgreSQL (StatefulSet) with a leaderboard
 - [ ] Kubernetes manifests and a Helm chart
 - [ ] Terraform (VPC, EC2) and Ansible on AWS
