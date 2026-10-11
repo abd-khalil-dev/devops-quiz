@@ -13,7 +13,7 @@ containers, CI/CD, Kubernetes, Helm, Terraform, Ansible and AWS.
 flowchart LR
     User --> Nginx["Frontend (nginx)"]
     Nginx -->|/api| API["Backend (Flask + gunicorn)"]
-    API --> DB[("PostgreSQL - coming soon")]
+    API --> DB[("PostgreSQL")]
 ```
 
 ## Run it locally
@@ -32,14 +32,16 @@ Open http://localhost:8080
 | GET | /api/categories | Topics and question counts |
 | GET | /api/questions | Random questions (`category`, `count`) |
 | POST | /api/answer | Checks an answer and returns the explanation |
-
+| GET | /api/ready | Checks that the database is reachable |
+| POST | /api/scores | Saves a score (name, topic, correct, total) |
+| GET | /api/leaderboard | Top scores |
 ## Roadmap
 
 - [x] Flask backend and quiz frontend
 - [x] Docker, Docker Compose and nginx reverse proxy
 - [x] CI with GitHub Actions (tests, build, smoke test)
 - [x] Push images to a registry
-- [ ] PostgreSQL (StatefulSet) with a leaderboard
+- [x] PostgreSQL with a leaderboard (StatefulSet on Kubernetes comes next)
 - [ ] Kubernetes manifests and a Helm chart
 - [ ] Terraform (VPC, EC2) and Ansible on AWS
 - [ ] CD: automatic deploy on every push

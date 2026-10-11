@@ -121,7 +121,23 @@ h1{font:800 clamp(2rem,5.5vw,3rem)/1.1 "Schibsted Grotesk",system-ui,sans-serif;
 footer{margin-top:30px;display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;color:var(--muted);font-size:.9rem}
 footer code{font:500 .82rem "IBM Plex Mono",ui-monospace,monospace;color:var(--text);background:var(--surface);
   border:1px solid var(--line);border-radius:6px;padding:1px 8px}
-
+.board{margin-top:26px;padding-top:20px;border-top:1px solid var(--line)}
+.lb{list-style:none;margin:12px 0 0;padding:0;display:grid;gap:6px}
+.lb li{display:grid;grid-template-columns:28px 1fr auto 56px;gap:12px;align-items:center;
+  background:var(--raised);border:1px solid var(--line);border-radius:10px;padding:8px 14px;font-size:.95rem}
+.lb .rank{color:var(--muted);font:500 .85rem "IBM Plex Mono",ui-monospace,monospace}
+.lb .who{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lb .topic{color:var(--muted);font-size:.85rem}
+.lb .pct{font-weight:700;text-align:right}
+.empty{color:var(--muted);margin:12px 0 0}
+.save{margin-top:24px;padding:16px;border:1px solid var(--line);border-radius:12px;background:var(--raised)}
+.save label{display:block;font-weight:600;margin-bottom:8px}
+.save .line{display:flex;gap:10px;flex-wrap:wrap}
+.save input{flex:1;min-width:160px;font:400 1rem "Schibsted Grotesk",system-ui,sans-serif;color:var(--text);
+  background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:9px 12px}
+.save input:disabled{opacity:.6}
+.save .msg{margin:8px 0 0;color:var(--muted);font-size:.9rem}
+@media(max-width:520px){.lb li{grid-template-columns:24px 1fr 56px}.lb .topic{display:none}}
 @keyframes enter{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 @keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-7px)}50%{transform:translateX(7px)}75%{transform:translateX(-4px)}}
@@ -272,7 +288,90 @@ function showError(msg, retry, label) {
   b.addEventListener('click', retry);
   card.appendChild(b);
 }
+/* ---------- Leaderboard and saving a score ---------- */
+function safeGet(k) { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } }
+function safeSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
 
+async function loadBoard(box) {
+  box.replaceChildren(el('p', 'empty', 'Loading...'));
+  try {
+    const res = await fetch('/api/leaderboard?limit=10');
+    if (!res.ok) throw new Error('bad response');
+    const rows = await res.json();
+    box.replaceChildren();
+    if (!rows.length) {
+      box.appendChild(el('p', 'empty', 'No scores yet. Be the first on the board.'));
+      return;
+    }
+    const ol = el('ol', 'lb');
+    rows.forEach((r, i) => {
+      const li = el('li');
+      li.append(el('span', 'rank', String(i + 1)), el('span', 'who', r.name),
+                el('span', 'topic', r.category), el('span', 'pct', r.percent + '%'));
+      ol.appendChild(li);
+    });
+    box.appendChild(ol);
+  } catch (e) {
+    box.replaceChildren(el('p', 'empty', 'Leaderboard is not available right now.'));
+  }
+}
+
+function boardSection() {
+  const wrap = el('div', 'board');
+  wrap.appendChild(el('h2', 'h2', 'Leaderboard'));
+  const box = el('div');
+  box.id = 'board-list';
+  wrap.appendChild(box);
+  loadBoard(box);
+  return wrap;
+}
+
+function saveForm(correct, total) {
+  const box = el('div', 'save');
+  const label = el('label', '', 'Save your score to the leaderboard');
+  label.setAttribute('for', 'player');
+  const line = el('div', 'line');
+  const input = el('input');
+  input.id = 'player';
+  input.type = 'text';
+  input.maxLength = 20;
+  input.placeholder = 'Your nickname';
+  input.autocomplete = 'off';
+  input.value = safeGet('quizName');
+  const btn = el('button', 'btn primary', 'Save score');
+  btn.type = 'button';
+  const msg = el('p', 'msg', '');
+  msg.setAttribute('role', 'status');
+
+  async function save() {
+    const name = input.value.trim();
+    if (!name) { msg.textContent = 'Please type a name first.'; input.focus(); return; }
+    btn.disabled = true;
+    msg.textContent = 'Saving...';
+    try {
+      const res = await fetch('/api/scores', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, category: state.config.category || 'Mixed', correct, total })
+      });
+      if (!res.ok) throw new Error('bad response');
+      safeSet('quizName', name);
+      input.disabled = true;
+      msg.textContent = 'Saved. Check the leaderboard below.';
+      const list = $('board-list');
+      if (list) loadBoard(list);
+    } catch (e) {
+      btn.disabled = false;
+      msg.textContent = 'Could not save the score. Try again.';
+    }
+  }
+  btn.addEventListener('click', save);
+  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') save(); });
+
+  line.append(input, btn);
+  box.append(label, line, msg);
+  return box;
+}
 /* ---------- Start screen ---------- */
 function renderStart(animate) {
   state.screen = 'start';
@@ -321,6 +420,7 @@ function renderStart(animate) {
   startBtn.type = 'button';
   startBtn.addEventListener('click', start);
   card.appendChild(startBtn);
+  card.appendChild(boardSection());
 }
 
 /* ---------- Quiz screen ---------- */
@@ -541,7 +641,8 @@ function showResult() {
   card.appendChild(el('p', 'focus', weak.length
     ? 'Focus on: ' + weak.join(', ') + '.'
     : 'Solid across every topic in this round.'));
-
+    card.appendChild(saveForm(correct, total));
+  card.appendChild(boardSection());
   const actions = el('div', 'actions');
   const again = el('button', 'btn primary', 'New round');
   again.type = 'button';
