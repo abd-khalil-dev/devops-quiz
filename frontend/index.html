@@ -3,80 +3,144 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>DevOps Quiz</title>
+<title>DevOps Interview Quiz</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans:wght@400;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500&family=Schibsted+Grotesk:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root{
-  --paper:#F3F6FA; --panel:#FFFFFF; --ink:#14213D; --muted:#5B6783; --line:#D5DCE8;
-  --pass:#1F9D55; --pass-bg:#E6F5EC; --fail:#D64545; --fail-bg:#FBEAEA; --amber:#E9A23B;
+  --bg:#06080D; --surface:rgba(13,18,28,.9); --raised:#141B29; --line:#232C3D;
+  --text:#E7ECF4; --muted:#93A0B5; --accent:#5B8CFF; --accent-ink:#06080D;
+  --good:#34D399; --good-bg:rgba(52,211,153,.12);
+  --bad:#F87171; --bad-bg:rgba(248,113,113,.12);
 }
 *{box-sizing:border-box}
-body{margin:0;background:var(--paper);color:var(--ink);font:400 17px/1.55 "IBM Plex Sans",system-ui,sans-serif}
-main{max-width:680px;margin:0 auto;padding:40px 20px 24px}
-h1{font:800 clamp(2.2rem,6vw,3.2rem)/1.05 "Bricolage Grotesque","IBM Plex Sans",sans-serif;margin:0 0 10px;letter-spacing:-.02em}
-.lead{color:var(--muted);margin:0}
+[hidden]{display:none!important}
+html{background:var(--bg)}
+body{margin:0;background:transparent;color:var(--text);min-height:100vh;
+  font:400 16px/1.6 "Schibsted Grotesk",system-ui,sans-serif}
+#bg{position:fixed;inset:0;width:100%;height:100%;z-index:-2}
+body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
+  background:radial-gradient(ellipse 80% 60% at 50% 25%,rgba(6,8,13,0) 0%,rgba(6,8,13,.78) 100%)}
+main{position:relative;max-width:760px;margin:0 auto;padding:44px 18px 28px}
+h1{font:800 clamp(2rem,5.5vw,3rem)/1.1 "Schibsted Grotesk",system-ui,sans-serif;letter-spacing:-.025em;margin:0 0 10px}
+.lead{color:var(--muted);margin:0 0 24px;max-width:60ch}
 
-.pipeline{display:flex;align-items:center;margin:30px 0 22px}
-.node{flex:none;width:24px;height:24px;border-radius:50%;border:2px solid var(--line);background:var(--panel);
-  display:grid;place-items:center;font-size:13px;font-weight:700;color:#fff}
-.node.current{border-color:var(--amber);box-shadow:0 0 0 4px rgba(233,162,59,.22)}
-.node.pass{background:var(--pass);border-color:var(--pass)}
-.node.fail{background:var(--fail);border-color:var(--fail)}
-.link{flex:1;height:2px;background:var(--line);min-width:4px}
-.link.done{background:var(--ink)}
+.stats{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.stat{display:flex;gap:8px;align-items:baseline;background:var(--surface);border:1px solid var(--line);
+  border-radius:10px;padding:6px 14px;backdrop-filter:blur(6px)}
+.stat span{color:var(--muted);font-size:.85rem}
+.stat b{font-weight:700}
 
-.stage{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:24px}
-.top{display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-size:.9rem;margin-bottom:12px}
-.tag{background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:2px 12px;color:var(--ink);font-weight:600}
-.question{font:600 1.35rem/1.35 "Bricolage Grotesque","IBM Plex Sans",sans-serif;margin:0 0 18px}
+.progress{display:flex;gap:4px;margin:0 0 16px}
+.seg{position:relative;flex:1;height:22px;padding:0;border:0;background:transparent;cursor:pointer}
+.seg::before{content:"";position:absolute;left:0;right:0;top:8px;height:6px;border-radius:3px;
+  background:#222B3D;transition:background .25s,top .2s,height .2s}
+.seg.pass::before{background:var(--good)}
+.seg.fail::before{background:var(--bad)}
+.seg.current::before{top:6px;height:10px}
+.seg.current:not(.pass):not(.fail)::before{background:var(--accent)}
+
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:28px 24px;backdrop-filter:blur(8px)}
+.card.enter{animation:enter .3s ease-out both}
+.h2{font:700 1.15rem/1.3 "Schibsted Grotesk",system-ui,sans-serif;margin:0 0 4px}
+.sub{color:var(--muted);margin:0;font-size:.95rem}
+
+.topics{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin:14px 0 26px}
+.counts{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0 26px}
+.topic,.pill{display:flex;justify-content:space-between;align-items:center;gap:10px;
+  font:600 1rem "Schibsted Grotesk",system-ui,sans-serif;color:var(--text);background:var(--raised);
+  border:1px solid var(--line);border-radius:10px;padding:10px 14px;cursor:pointer;
+  transition:border-color .15s,background .15s}
+.topic .n{color:var(--muted);font-weight:400;font-size:.9rem}
+.topic:hover,.pill:hover:enabled{border-color:#3A4660}
+.topic.on,.pill.on{border-color:var(--accent);background:rgba(91,140,255,.14)}
+.pill:disabled{opacity:.35;cursor:default}
+
+.top{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px;font-size:.9rem;color:var(--muted)}
+.tags{display:flex;gap:10px;align-items:center}
+.tag{font:500 .78rem "IBM Plex Mono",ui-monospace,monospace;color:var(--text);background:var(--raised);
+  border:1px solid var(--line);border-radius:6px;padding:2px 10px}
+.question{font:700 1.3rem/1.4 "Schibsted Grotesk",system-ui,sans-serif;margin:0 0 20px}
 
 .options{display:grid;gap:10px}
-.option{display:flex;gap:14px;align-items:center;text-align:left;width:100%;font:inherit;color:inherit;
-  background:var(--panel);border:1.5px solid var(--line);border-radius:10px;padding:12px 14px;cursor:pointer;
-  transition:border-color .15s,background .15s}
-.option:hover:enabled{border-color:var(--ink)}
-.option:disabled{cursor:default}
-.letter{flex:none;width:28px;height:28px;border-radius:8px;background:var(--paper);display:grid;place-items:center;font-weight:600;font-size:.9rem}
-.option.correct{border-color:var(--pass);background:var(--pass-bg)}
-.option.correct .letter{background:var(--pass);color:#fff}
-.option.wrong{border-color:var(--fail);background:var(--fail-bg)}
-.option.wrong .letter{background:var(--fail);color:#fff}
+.option{display:flex;gap:14px;align-items:flex-start;width:100%;text-align:left;
+  font:400 1rem/1.5 "Schibsted Grotesk",system-ui,sans-serif;color:var(--text);
+  background:var(--raised);border:1px solid var(--line);border-radius:12px;padding:13px 14px;cursor:pointer;
+  transition:border-color .15s,background .15s,transform .1s;
+  animation:rise .3s both;animation-delay:calc(var(--i)*50ms)}
+.option:hover:enabled{border-color:var(--accent);background:#18223A}
+.option:active:enabled{transform:scale(.996)}
+.option:disabled{color:var(--text)}
+.letter{flex:none;width:26px;height:26px;margin-top:1px;border-radius:7px;border:1px solid var(--line);
+  display:grid;place-items:center;font:500 .8rem "IBM Plex Mono",ui-monospace,monospace;color:var(--muted)}
+.option:hover:enabled .letter{border-color:var(--accent);color:var(--accent)}
+.options.revealed .option{cursor:default}
+.options.revealed .option:not(.correct):not(.wrong){opacity:.5}
+.option.correct{border-color:var(--good);background:var(--good-bg)}
+.option.correct .letter{background:var(--good);border-color:var(--good);color:var(--bg)}
+.option.wrong{border-color:var(--bad);background:var(--bad-bg)}
+.option.wrong .letter{background:var(--bad);border-color:var(--bad);color:var(--bg)}
+.options.still .option{animation:none}
+.options.fresh .option.wrong{animation:shake .4s}
 
-.feedback{display:none;margin-top:16px;padding:12px 14px;border-radius:10px}
-.feedback.show{display:block}
-.feedback.ok{background:var(--pass-bg);border-left:4px solid var(--pass)}
-.feedback.bad{background:var(--fail-bg);border-left:4px solid var(--fail)}
+.feedback{display:none;margin-top:16px;padding:14px 16px;border-radius:10px;border:1px solid var(--line);
+  border-left-width:4px;background:var(--raised)}
+.feedback.show{display:block;animation:rise .25s both}
+.feedback.ok{border-left-color:var(--good)}
+.feedback.bad{border-left-color:var(--bad)}
+.feedback strong{display:block;margin-bottom:2px}
+.feedback p{margin:0;color:#C9D2E1}
 
-.primary{margin-top:18px;font:600 1rem "IBM Plex Sans",sans-serif;background:var(--ink);color:#fff;border:0;border-radius:10px;padding:12px 22px;cursor:pointer}
-.primary:hover{opacity:.9}
-:focus-visible{outline:3px solid var(--amber);outline-offset:2px}
+.nav{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:20px}
+.nav .fin{margin-left:auto}
+.btn{font:600 .95rem "Schibsted Grotesk",system-ui,sans-serif;color:var(--text);background:var(--raised);
+  border:1px solid var(--line);border-radius:10px;padding:9px 18px;cursor:pointer;transition:border-color .15s,filter .15s}
+.btn:hover:enabled{border-color:var(--accent)}
+.btn:disabled{opacity:.35;cursor:default}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.primary:hover:enabled{filter:brightness(1.1)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
 
-.verdict{font:800 2.4rem/1.1 "Bricolage Grotesque","IBM Plex Sans",sans-serif;margin:0 0 6px}
-.verdict.ok{color:var(--pass)} .verdict.bad{color:var(--fail)}
-.score{margin:0 0 16px;color:var(--muted)}
-.stages{list-style:none;padding:0;margin:0;border:1px solid var(--line);border-radius:10px;overflow:hidden}
-.stages li{display:flex;justify-content:space-between;padding:9px 14px;border-bottom:1px solid var(--line)}
-.stages li:last-child{border-bottom:0}
-.stages li.ok span:last-child{color:var(--pass);font-weight:600}
-.stages li.bad span:last-child{color:var(--fail);font-weight:600}
+.result{display:flex;gap:28px;align-items:center;flex-wrap:wrap}
+.ring{position:relative;width:150px;height:150px;flex:none}
+.ring svg{transform:rotate(-90deg);display:block}
+.ring .num{position:absolute;inset:0;display:grid;place-items:center;
+  font:800 2.2rem "Schibsted Grotesk",system-ui,sans-serif}
+.verdict{font:800 1.8rem/1.2 "Schibsted Grotesk",system-ui,sans-serif;margin:0 0 4px}
+.note{color:var(--muted);margin:0}
+.rows{margin-top:26px;display:grid;gap:12px}
+.row{display:grid;grid-template-columns:130px 1fr 48px;gap:12px;align-items:center;font-size:.95rem}
+.bar{height:8px;border-radius:4px;background:var(--line);overflow:hidden}
+.bar i{display:block;height:100%;width:0;border-radius:4px;transition:width .8s cubic-bezier(.2,.8,.2,1)}
+.row b{text-align:right;font-weight:600}
+.focus{margin:18px 0 0;color:var(--muted)}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}
+@media(max-width:520px){.row{grid-template-columns:100px 1fr 40px}}
 
-footer{margin-top:32px;padding-top:14px;border-top:1px solid var(--line);display:flex;flex-wrap:wrap;gap:8px 18px;
-  align-items:center;color:var(--muted);font-size:.85rem}
-footer code{font:500 .85rem "IBM Plex Mono",ui-monospace,monospace;color:var(--ink);background:var(--panel);
-  border:1px solid var(--line);border-radius:6px;padding:2px 8px}
+footer{margin-top:30px;display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;color:var(--muted);font-size:.9rem}
+footer code{font:500 .82rem "IBM Plex Mono",ui-monospace,monospace;color:var(--text);background:var(--surface);
+  border:1px solid var(--line);border-radius:6px;padding:1px 8px}
 
-@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+@keyframes enter{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-7px)}50%{transform:translateX(7px)}75%{transform:translateX(-4px)}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
 <body>
+<canvas id="bg" aria-hidden="true"></canvas>
 <main>
-  <h1>DevOps Quiz</h1>
-  <p class="lead">10 questions. Every answer moves the pipeline forward.</p>
+  <h1>DevOps Interview Quiz</h1>
+  <p class="lead">50 questions on what interviewers really ask. Practise by topic, read the model answers, and find your weak spots.</p>
 
-  <div class="pipeline" id="pipeline" aria-label="Quiz progress"></div>
-  <section class="stage" id="stage" aria-live="polite">Loading questions...</section>
+  <div class="stats" id="stats" hidden>
+    <div class="stat"><span>Answered</span><b id="s-answered">0</b></div>
+    <div class="stat"><span>Correct</span><b id="s-correct">0</b></div>
+    <div class="stat"><span>Streak</span><b id="s-streak">0</b></div>
+  </div>
+  <div class="progress" id="progress" aria-label="Quiz progress" hidden></div>
+  <section class="card" id="stage" aria-live="polite">Loading...</section>
 
   <footer>
     <span>Served by pod</span><code id="pod">...</code>
@@ -85,8 +149,12 @@ footer code{font:500 .85rem "IBM Plex Mono",ui-monospace,monospace;color:var(--i
 </main>
 
 <script>
-const state = { questions: [], index: 0, results: [], locked: false };
+const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const $ = (id) => document.getElementById(id);
+const state = {
+  screen: 'start', categories: [], config: { category: '', count: 10 },
+  questions: [], answers: [], index: 0, streak: 0, busy: false
+};
 
 function el(tag, cls, text) {
   const e = document.createElement(tag);
@@ -94,7 +162,6 @@ function el(tag, cls, text) {
   if (text !== undefined) e.textContent = text;
   return e;
 }
-
 function shuffle(arr) {
   for (let i = arr.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -102,134 +169,421 @@ function shuffle(arr) {
   }
   return arr;
 }
+function replay(node, cls) {
+  node.classList.remove(cls);
+  void node.offsetWidth;
+  node.classList.add(cls);
+}
 
-function renderPipeline() {
-  const box = $('pipeline');
+/* ---------- Background: data packets moving on pipeline rails ---------- */
+(function () {
+  const c = $('bg'), ctx = c.getContext('2d');
+  const GAP = 56;
+  let w = 0, h = 0, hr = [], vr = [], packets = [], last = 0;
+
+  function spawn(initial) {
+    const horizontal = Math.random() < 0.5;
+    const rails = horizontal ? hr : vr;
+    const span = horizontal ? w : h;
+    const dir = Math.random() < 0.5 ? 1 : -1;
+    return {
+      horizontal, dir,
+      pos: rails[Math.floor(Math.random() * rails.length)],
+      t: initial ? Math.random() * span : (dir > 0 ? -160 : span + 160),
+      speed: 28 + Math.random() * 52,
+      len: 40 + Math.random() * 70,
+      rgb: Math.random() < 0.7 ? '91,140,255' : '45,212,191'
+    };
+  }
+
+  function draw(dt) {
+    ctx.clearRect(0, 0, w, h);
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = 'rgba(120,150,200,0.07)';
+    ctx.beginPath();
+    hr.forEach((y) => { ctx.moveTo(0, y); ctx.lineTo(w, y); });
+    vr.forEach((x) => { ctx.moveTo(x, 0); ctx.lineTo(x, h); });
+    ctx.stroke();
+
+    packets.forEach((p, i) => {
+      p.t += p.dir * p.speed * dt;
+      const span = p.horizontal ? w : h;
+      if (p.t < -170 || p.t > span + 170) { packets[i] = spawn(false); return; }
+      const tail = p.t - p.dir * p.len;
+      const x0 = p.horizontal ? p.t : p.pos, y0 = p.horizontal ? p.pos : p.t;
+      const x1 = p.horizontal ? tail : p.pos, y1 = p.horizontal ? p.pos : tail;
+      const g = ctx.createLinearGradient(x0, y0, x1, y1);
+      g.addColorStop(0, 'rgba(' + p.rgb + ',0.9)');
+      g.addColorStop(1, 'rgba(' + p.rgb + ',0)');
+      ctx.strokeStyle = g;
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+      ctx.fillStyle = 'rgb(' + p.rgb + ')';
+      ctx.beginPath(); ctx.arc(x0, y0, 2.4, 0, 6.283); ctx.fill();
+    });
+  }
+
+  function build() {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    w = window.innerWidth; h = window.innerHeight;
+    c.width = w * dpr; c.height = h * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    hr = []; vr = [];
+    for (let y = GAP / 2; y < h; y += GAP) hr.push(y);
+    for (let x = GAP / 2; x < w; x += GAP) vr.push(x);
+    const n = Math.max(14, Math.min(60, Math.round((w * h) / 30000)));
+    packets = Array.from({ length: n }, () => spawn(true));
+    if (reduce) draw(0);
+  }
+
+  function frame(now) {
+    const dt = Math.min((now - last) / 1000, 0.05);
+    last = now;
+    draw(dt);
+    requestAnimationFrame(frame);
+  }
+
+  window.addEventListener('resize', build);
+  build();
+  if (!reduce) requestAnimationFrame((t) => { last = t; frame(t); });
+})();
+
+/* ---------- Helpers ---------- */
+function countUp(node, to) {
+  if (reduce) { node.textContent = to + '%'; return; }
+  const t0 = performance.now(), dur = 900;
+  const tick = (t) => {
+    const p = Math.min((t - t0) / dur, 1);
+    node.textContent = Math.round(to * p * (2 - p)) + '%';
+    if (p < 1) requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+}
+
+function showError(msg, retry, label) {
+  state.screen = 'error';
+  $('stats').hidden = true;
+  $('progress').hidden = true;
+  const card = $('stage');
+  card.replaceChildren(el('p', '', msg));
+  const b = el('button', 'btn primary', label || 'Try again');
+  b.type = 'button';
+  b.style.marginTop = '16px';
+  b.addEventListener('click', retry);
+  card.appendChild(b);
+}
+
+/* ---------- Start screen ---------- */
+function renderStart(animate) {
+  state.screen = 'start';
+  $('stats').hidden = true;
+  $('progress').hidden = true;
+  const cfg = state.config;
+  const total = state.categories.reduce((s, c) => s + c.count, 0);
+  const pool = cfg.category
+    ? (state.categories.find((c) => c.name === cfg.category) || { count: 0 }).count
+    : total;
+  if (cfg.count !== 'all' && cfg.count > pool) cfg.count = 'all';
+
+  const card = $('stage');
+  card.replaceChildren();
+  if (animate !== false) replay(card, 'enter');
+
+  card.appendChild(el('h2', 'h2', 'Choose a topic'));
+  card.appendChild(el('p', 'sub', 'Drill into one topic, or mix them all like a real interview.'));
+
+  const topics = el('div', 'topics');
+  [{ name: '', count: total }].concat(state.categories).forEach((it) => {
+    const on = cfg.category === it.name;
+    const b = el('button', 'topic' + (on ? ' on' : ''));
+    b.type = 'button';
+    b.setAttribute('aria-pressed', String(on));
+    b.append(el('span', '', it.name || 'Mixed'), el('span', 'n', String(it.count)));
+    b.addEventListener('click', () => { cfg.category = it.name; renderStart(false); });
+    topics.appendChild(b);
+  });
+  card.appendChild(topics);
+
+  card.appendChild(el('h2', 'h2', 'How many questions?'));
+  const counts = el('div', 'counts');
+  [10, 20, 30, 'all'].forEach((n) => {
+    const on = cfg.count === n;
+    const b = el('button', 'pill' + (on ? ' on' : ''), n === 'all' ? 'All (' + pool + ')' : String(n));
+    b.type = 'button';
+    b.disabled = n !== 'all' && n > pool;
+    b.setAttribute('aria-pressed', String(on));
+    b.addEventListener('click', () => { cfg.count = n; renderStart(false); });
+    counts.appendChild(b);
+  });
+  card.appendChild(counts);
+
+  const startBtn = el('button', 'btn primary', 'Start practice');
+  startBtn.type = 'button';
+  startBtn.addEventListener('click', start);
+  card.appendChild(startBtn);
+}
+
+/* ---------- Quiz screen ---------- */
+function renderStats() {
+  const answered = state.answers.filter(Boolean).length;
+  const correct = state.answers.filter((a) => a && a.correct).length;
+  $('s-answered').textContent = answered + ' / ' + state.questions.length;
+  $('s-correct').textContent = correct;
+  $('s-streak').textContent = state.streak;
+}
+
+function renderProgress() {
+  const box = $('progress');
   box.replaceChildren();
   state.questions.forEach((q, i) => {
-    const r = state.results[i];
-    let cls = 'node';
-    if (r) cls += r.correct ? ' pass' : ' fail';
-    else if (i === state.index) cls += ' current';
-    const node = el('span', cls, r ? (r.correct ? '✓' : '✕') : '');
-    node.setAttribute('aria-label', 'Step ' + (i + 1) + (r ? (r.correct ? ' passed' : ' failed') : ''));
-    box.appendChild(node);
-    if (i < state.questions.length - 1) box.appendChild(el('span', 'link' + (r ? ' done' : '')));
+    const a = state.answers[i];
+    let cls = 'seg';
+    if (a) cls += a.correct ? ' pass' : ' fail';
+    if (i === state.index) cls += ' current';
+    const b = el('button', cls);
+    b.type = 'button';
+    b.setAttribute('aria-label', 'Go to question ' + (i + 1) + (a ? (a.correct ? ', correct' : ', wrong') : ', not answered'));
+    b.addEventListener('click', () => go(i));
+    box.appendChild(b);
   });
 }
 
-function showError(msg) {
-  const card = $('stage');
-  card.replaceChildren(el('p', '', msg));
-  const retry = el('button', 'primary', 'Try again');
-  retry.addEventListener('click', start);
-  card.appendChild(retry);
+function markAnswer(list, q, a) {
+  const buttons = list.querySelectorAll('.option');
+  buttons.forEach((b) => (b.disabled = true));
+  list.classList.add('revealed');
+  q.options.forEach((text, i) => {
+    if (text === a.answer) {
+      buttons[i].classList.add('correct');
+      buttons[i].querySelector('.letter').textContent = '✓';
+    } else if (!a.correct && text === a.picked) {
+      buttons[i].classList.add('wrong');
+      buttons[i].querySelector('.letter').textContent = '✕';
+    }
+  });
 }
 
-function showQuestion() {
-  state.locked = false;
-  renderPipeline();
-  const q = state.questions[state.index];
+function fillFeedback(fb, a) {
+  fb.className = 'feedback show ' + (a.correct ? 'ok' : 'bad');
+  fb.replaceChildren(
+    el('strong', '', a.correct ? 'Correct.' : 'Not quite.'),
+    el('p', '', 'Interview answer: ' + a.explanation)
+  );
+}
+
+function navRow() {
+  const last = state.questions.length - 1;
+  const left = state.questions.filter((q, i) => !state.answers[i]).length;
+  const row = el('div', 'nav');
+
+  const prev = el('button', 'btn nav-prev', 'Previous');
+  prev.type = 'button';
+  prev.disabled = state.index === 0;
+  prev.addEventListener('click', () => go(state.index - 1));
+
+  const next = el('button', 'btn nav-next', 'Next');
+  next.type = 'button';
+  next.disabled = state.index === last;
+  next.addEventListener('click', () => go(state.index + 1));
+
+  const fin = el('button', 'btn fin nav-fin' + (left ? '' : ' primary'), left ? 'Finish (' + left + ' left)' : 'See result');
+  fin.type = 'button';
+  fin.addEventListener('click', showResult);
+
+  row.append(prev, next, fin);
+  return row;
+}
+
+function go(n) {
+  if (n < 0 || n >= state.questions.length || state.busy) return;
+  state.index = n;
+  renderQuiz(false);
+}
+
+function renderQuiz(fresh) {
+  state.screen = 'quiz';
+  $('stats').hidden = false;
+  $('progress').hidden = false;
+  renderProgress();
+  renderStats();
+
+  const idx = state.index;
+  const q = state.questions[idx];
+  const a = state.answers[idx];
   const card = $('stage');
   card.replaceChildren();
+  if (!fresh) replay(card, 'enter');
 
   const top = el('div', 'top');
-  top.appendChild(el('span', 'tag', q.category));
-  top.appendChild(el('span', '', 'Question ' + (state.index + 1) + ' of ' + state.questions.length));
-  card.appendChild(top);
-  card.appendChild(el('p', 'question', q.question));
+  const tags = el('div', 'tags');
+  tags.append(el('span', 'tag', q.category), el('span', '', q.level));
+  top.append(tags, el('span', '', 'Question ' + (idx + 1) + ' of ' + state.questions.length));
+  card.append(top, el('p', 'question', q.question));
 
-  const list = el('div', 'options');
+  const list = el('div', 'options' + (fresh ? ' still fresh' : ''));
   q.options.forEach((text, i) => {
     const b = el('button', 'option');
     b.type = 'button';
-    b.appendChild(el('span', 'letter', 'ABCD'[i]));
-    b.appendChild(el('span', '', text));
-    b.addEventListener('click', () => choose(i, b, list));
+    b.style.setProperty('--i', i);
+    b.append(el('span', 'letter', 'ABCD'[i]), el('span', '', text));
+    b.addEventListener('click', () => choose(i));
     list.appendChild(b);
   });
   card.appendChild(list);
-  card.appendChild(el('div', 'feedback'));
+
+  const fb = el('div', 'feedback');
+  card.appendChild(fb);
+  if (a) { markAnswer(list, q, a); fillFeedback(fb, a); }
+
+  card.appendChild(navRow());
 }
 
-async function choose(i, btn, list) {
-  if (state.locked) return;
-  state.locked = true;
-  const q = state.questions[state.index];
+async function choose(i) {
+  const idx = state.index;
+  if (state.busy || state.answers[idx]) return;
+  state.busy = true;
+  const q = state.questions[idx];
+  const picked = q.options[i];
+
   let out;
   try {
     const res = await fetch('/api/answer', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: q.id, choice: i })
+      body: JSON.stringify({ id: q.id, choice: picked })
     });
     if (!res.ok) throw new Error('bad response');
     out = await res.json();
   } catch (e) {
-    state.locked = false;
-    showError('Could not reach the server. Check that the backend is running.');
+    state.busy = false;
+    const fb = $('stage').querySelector('.feedback');
+    fb.className = 'feedback show bad';
+    fb.textContent = 'Could not reach the server. Pick your answer again.';
     return;
   }
+  state.busy = false;
 
-  const buttons = list.querySelectorAll('.option');
-  buttons.forEach((b) => (b.disabled = true));
-  buttons[out.answer].classList.add('correct');
-  if (!out.correct) btn.classList.add('wrong');
+  state.streak = out.correct ? state.streak + 1 : 0;
+  state.answers[idx] = { picked, correct: out.correct, answer: out.answer, explanation: out.explanation };
 
-  state.results[state.index] = { correct: out.correct, category: q.category };
-  renderPipeline();
-
-  const fb = $('stage').querySelector('.feedback');
-  fb.className = 'feedback show ' + (out.correct ? 'ok' : 'bad');
-  fb.replaceChildren(el('strong', '', out.correct ? 'Correct. ' : 'Not quite. '), el('span', '', out.explanation));
-
-  const last = state.index === state.questions.length - 1;
-  const next = el('button', 'primary', last ? 'See result' : 'Next question');
-  next.addEventListener('click', () => {
-    state.index++;
-    last ? showResult() : showQuestion();
-  });
-  $('stage').appendChild(next);
-  next.focus();
+  if (state.index === idx) {
+    renderQuiz(true);
+    const last = idx === state.questions.length - 1;
+    const target = $('stage').querySelector(last ? '.nav-fin' : '.nav-next');
+    if (target) target.focus();
+  } else {
+    renderProgress();
+    renderStats();
+  }
 }
 
+/* ---------- Result screen ---------- */
 function showResult() {
-  renderPipeline();
+  state.screen = 'result';
+  $('stats').hidden = true;
+  $('progress').hidden = false;
+  renderProgress();
+
   const total = state.questions.length;
-  const passed = state.results.filter((r) => r.correct).length;
-  const ok = passed >= Math.ceil(total * 0.7);
+  const correct = state.answers.filter((a) => a && a.correct).length;
+  const left = state.questions.filter((q, i) => !state.answers[i]).length;
+  const pct = Math.round((correct / total) * 100);
+  const verdict = pct >= 80 ? 'Interview ready' : pct >= 60 ? 'Getting there' : 'Keep practising';
+  const color = pct >= 80 ? 'var(--good)' : pct >= 60 ? 'var(--accent)' : 'var(--bad)';
+
+  const by = {};
+  state.questions.forEach((q, i) => {
+    const c = by[q.category] || (by[q.category] = { t: 0, c: 0 });
+    c.t++;
+    if (state.answers[i] && state.answers[i].correct) c.c++;
+  });
+  const weak = Object.keys(by).filter((k) => by[k].c / by[k].t < 0.7);
 
   const card = $('stage');
   card.replaceChildren();
-  card.appendChild(el('h2', 'verdict ' + (ok ? 'ok' : 'bad'), ok ? 'Build passed' : 'Build failed'));
-  card.appendChild(el('p', 'score', passed + ' of ' + total + ' checks passed. You need ' + Math.ceil(total * 0.7) + ' to pass.'));
+  replay(card, 'enter');
 
-  const rows = el('ul', 'stages');
-  state.results.forEach((r) => {
-    const li = el('li', r.correct ? 'ok' : 'bad');
-    li.appendChild(el('span', '', r.category));
-    li.appendChild(el('span', '', r.correct ? 'passed' : 'failed'));
-    rows.appendChild(li);
+  const result = el('div', 'result');
+  const ringBox = el('div', 'ring');
+  ringBox.innerHTML =
+    '<svg viewBox="0 0 120 120" width="150" height="150" aria-hidden="true">' +
+    '<circle cx="60" cy="60" r="54" fill="none" stroke="#232C3D" stroke-width="9"/>' +
+    '<circle id="arc" cx="60" cy="60" r="54" fill="none" stroke-width="9" stroke-linecap="round" ' +
+    'stroke-dasharray="339.29" stroke-dashoffset="339.29" ' +
+    'style="transition:stroke-dashoffset 1s cubic-bezier(.2,.8,.2,1)"/></svg>';
+  const num = el('div', 'num', '0%');
+  ringBox.appendChild(num);
+
+  const text = el('div', 'summary');
+  text.appendChild(el('h2', 'verdict', verdict));
+  let note = correct + ' of ' + total + ' correct.';
+  if (left) note += ' ' + left + ' not answered.';
+  text.appendChild(el('p', 'note', note));
+  result.append(ringBox, text);
+  card.appendChild(result);
+
+  const rows = el('div', 'rows');
+  const fills = [];
+  Object.keys(by).forEach((name) => {
+    const v = by[name];
+    const p = Math.round((v.c / v.t) * 100);
+    const row = el('div', 'row');
+    const bar = el('div', 'bar');
+    const fill = el('i');
+    fill.style.background = p >= 70 ? 'var(--good)' : 'var(--bad)';
+    bar.appendChild(fill);
+    row.append(el('span', '', name), bar, el('b', '', v.c + '/' + v.t));
+    rows.appendChild(row);
+    fills.push([fill, p]);
   });
   card.appendChild(rows);
 
-  const again = el('button', 'primary', 'Run it again');
+  card.appendChild(el('p', 'focus', weak.length
+    ? 'Focus on: ' + weak.join(', ') + '.'
+    : 'Solid across every topic in this round.'));
+
+  const actions = el('div', 'actions');
+  const again = el('button', 'btn primary', 'New round');
+  again.type = 'button';
   again.addEventListener('click', start);
-  card.appendChild(again);
+  const topics = el('button', 'btn', 'Change topic');
+  topics.type = 'button';
+  topics.addEventListener('click', () => renderStart());
+  const review = el('button', 'btn', 'Review answers');
+  review.type = 'button';
+  review.addEventListener('click', () => { state.index = 0; renderQuiz(false); });
+  actions.append(again, topics, review);
+  card.appendChild(actions);
+
+  const arc = ringBox.querySelector('#arc');
+  arc.style.stroke = color;
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    arc.style.strokeDashoffset = String(339.29 * (1 - pct / 100));
+    fills.forEach(([f, p]) => { f.style.width = p + '%'; });
+  }));
+  countUp(num, pct);
 }
 
+/* ---------- Start a round and load data ---------- */
 async function start() {
+  state.busy = false;
+  const cfg = state.config;
+  const params = new URLSearchParams({ count: String(cfg.count === 'all' ? 50 : cfg.count) });
+  if (cfg.category) params.set('category', cfg.category);
   try {
-    const res = await fetch('/api/questions');
+    const res = await fetch('/api/questions?' + params.toString());
     if (!res.ok) throw new Error('bad response');
-    state.questions = shuffle(await res.json());
+    const data = await res.json();
+    if (!data.length) throw new Error('no questions');
+    state.questions = data.map((q) => Object.assign({}, q, { options: shuffle(q.options.slice()) }));
   } catch (e) {
-    showError('Could not load the questions. Check that the backend is running.');
+    showError('Could not load the questions. Check that the backend is running.', start);
     return;
   }
+  state.answers = [];
   state.index = 0;
-  state.results = [];
-  showQuestion();
+  state.streak = 0;
+  renderQuiz(false);
 }
 
 async function loadInfo() {
@@ -243,8 +597,32 @@ async function loadInfo() {
   }
 }
 
-start();
-loadInfo();
+async function init() {
+  loadInfo();
+  try {
+    const res = await fetch('/api/categories');
+    if (!res.ok) throw new Error('bad response');
+    state.categories = await res.json();
+    renderStart();
+  } catch (e) {
+    showError('Could not reach the quiz server. Check that the backend is running.', init);
+  }
+}
+
+document.addEventListener('keydown', (e) => {
+  if (state.screen !== 'quiz' || state.busy) return;
+  const n = Number(e.key);
+  if (n >= 1 && n <= 4) {
+    const b = document.querySelectorAll('.option')[n - 1];
+    if (b && !b.disabled) b.click();
+  } else if (e.key === 'ArrowRight') {
+    go(state.index + 1);
+  } else if (e.key === 'ArrowLeft') {
+    go(state.index - 1);
+  }
+});
+
+init();
 </script>
 </body>
 </html>
