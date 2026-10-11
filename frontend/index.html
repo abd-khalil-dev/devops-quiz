@@ -4,69 +4,247 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>DevOps Quiz</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans:wght@400;600&display=swap" rel="stylesheet">
 <style>
-  body{font-family:system-ui,sans-serif;max-width:640px;margin:40px auto;padding:0 16px;background:#0f172a;color:#e2e8f0}
-  h1{color:#38bdf8}
-  .q{background:#1e293b;padding:16px;border-radius:10px;margin-bottom:14px}
-  label{display:block;margin:6px 0;cursor:pointer}
-  button{background:#38bdf8;color:#0f172a;border:0;padding:10px 20px;border-radius:8px;font-weight:600;cursor:pointer}
-  #result{font-size:1.2rem;margin-top:16px}
-  footer{margin-top:40px;font-size:.85rem;color:#94a3b8;border-top:1px solid #334155;padding-top:12px}
+:root{
+  --paper:#F3F6FA; --panel:#FFFFFF; --ink:#14213D; --muted:#5B6783; --line:#D5DCE8;
+  --pass:#1F9D55; --pass-bg:#E6F5EC; --fail:#D64545; --fail-bg:#FBEAEA; --amber:#E9A23B;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font:400 17px/1.55 "IBM Plex Sans",system-ui,sans-serif}
+main{max-width:680px;margin:0 auto;padding:40px 20px 24px}
+h1{font:800 clamp(2.2rem,6vw,3.2rem)/1.05 "Bricolage Grotesque","IBM Plex Sans",sans-serif;margin:0 0 10px;letter-spacing:-.02em}
+.lead{color:var(--muted);margin:0}
+
+.pipeline{display:flex;align-items:center;margin:30px 0 22px}
+.node{flex:none;width:24px;height:24px;border-radius:50%;border:2px solid var(--line);background:var(--panel);
+  display:grid;place-items:center;font-size:13px;font-weight:700;color:#fff}
+.node.current{border-color:var(--amber);box-shadow:0 0 0 4px rgba(233,162,59,.22)}
+.node.pass{background:var(--pass);border-color:var(--pass)}
+.node.fail{background:var(--fail);border-color:var(--fail)}
+.link{flex:1;height:2px;background:var(--line);min-width:4px}
+.link.done{background:var(--ink)}
+
+.stage{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:24px}
+.top{display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-size:.9rem;margin-bottom:12px}
+.tag{background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:2px 12px;color:var(--ink);font-weight:600}
+.question{font:600 1.35rem/1.35 "Bricolage Grotesque","IBM Plex Sans",sans-serif;margin:0 0 18px}
+
+.options{display:grid;gap:10px}
+.option{display:flex;gap:14px;align-items:center;text-align:left;width:100%;font:inherit;color:inherit;
+  background:var(--panel);border:1.5px solid var(--line);border-radius:10px;padding:12px 14px;cursor:pointer;
+  transition:border-color .15s,background .15s}
+.option:hover:enabled{border-color:var(--ink)}
+.option:disabled{cursor:default}
+.letter{flex:none;width:28px;height:28px;border-radius:8px;background:var(--paper);display:grid;place-items:center;font-weight:600;font-size:.9rem}
+.option.correct{border-color:var(--pass);background:var(--pass-bg)}
+.option.correct .letter{background:var(--pass);color:#fff}
+.option.wrong{border-color:var(--fail);background:var(--fail-bg)}
+.option.wrong .letter{background:var(--fail);color:#fff}
+
+.feedback{display:none;margin-top:16px;padding:12px 14px;border-radius:10px}
+.feedback.show{display:block}
+.feedback.ok{background:var(--pass-bg);border-left:4px solid var(--pass)}
+.feedback.bad{background:var(--fail-bg);border-left:4px solid var(--fail)}
+
+.primary{margin-top:18px;font:600 1rem "IBM Plex Sans",sans-serif;background:var(--ink);color:#fff;border:0;border-radius:10px;padding:12px 22px;cursor:pointer}
+.primary:hover{opacity:.9}
+:focus-visible{outline:3px solid var(--amber);outline-offset:2px}
+
+.verdict{font:800 2.4rem/1.1 "Bricolage Grotesque","IBM Plex Sans",sans-serif;margin:0 0 6px}
+.verdict.ok{color:var(--pass)} .verdict.bad{color:var(--fail)}
+.score{margin:0 0 16px;color:var(--muted)}
+.stages{list-style:none;padding:0;margin:0;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.stages li{display:flex;justify-content:space-between;padding:9px 14px;border-bottom:1px solid var(--line)}
+.stages li:last-child{border-bottom:0}
+.stages li.ok span:last-child{color:var(--pass);font-weight:600}
+.stages li.bad span:last-child{color:var(--fail);font-weight:600}
+
+footer{margin-top:32px;padding-top:14px;border-top:1px solid var(--line);display:flex;flex-wrap:wrap;gap:8px 18px;
+  align-items:center;color:var(--muted);font-size:.85rem}
+footer code{font:500 .85rem "IBM Plex Mono",ui-monospace,monospace;color:var(--ink);background:var(--panel);
+  border:1px solid var(--line);border-radius:6px;padding:2px 8px}
+
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
 <body>
+<main>
   <h1>DevOps Quiz</h1>
-  <div id="quiz">Loading...</div>
-  <button id="submit" style="display:none">Submit</button>
-  <div id="result"></div>
-  <footer id="footer">...</footer>
+  <p class="lead">10 questions. Every answer moves the pipeline forward.</p>
+
+  <div class="pipeline" id="pipeline" aria-label="Quiz progress"></div>
+  <section class="stage" id="stage" aria-live="polite">Loading questions...</section>
+
+  <footer>
+    <span>Served by pod</span><code id="pod">...</code>
+    <span>Version</span><code id="ver">...</code>
+  </footer>
+</main>
 
 <script>
-let questions = [];
+const state = { questions: [], index: 0, results: [], locked: false };
+const $ = (id) => document.getElementById(id);
 
-async function loadQuiz() {
-  const res = await fetch('/api/questions');
-  questions = await res.json();
-  const box = document.getElementById('quiz');
-  box.innerHTML = '';
-  questions.forEach(q => {
-    const div = document.createElement('div');
-    div.className = 'q';
-    div.innerHTML = '<p><b>' + q.id + '. ' + q.question + '</b></p>' +
-      q.options.map((o, i) =>
-        '<label><input type="radio" name="q' + q.id + '" value="' + i + '"> ' + o + '</label>'
-      ).join('');
-    box.appendChild(div);
+function el(tag, cls, text) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text !== undefined) e.textContent = text;
+  return e;
+}
+
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function renderPipeline() {
+  const box = $('pipeline');
+  box.replaceChildren();
+  state.questions.forEach((q, i) => {
+    const r = state.results[i];
+    let cls = 'node';
+    if (r) cls += r.correct ? ' pass' : ' fail';
+    else if (i === state.index) cls += ' current';
+    const node = el('span', cls, r ? (r.correct ? '✓' : '✕') : '');
+    node.setAttribute('aria-label', 'Step ' + (i + 1) + (r ? (r.correct ? ' passed' : ' failed') : ''));
+    box.appendChild(node);
+    if (i < state.questions.length - 1) box.appendChild(el('span', 'link' + (r ? ' done' : '')));
   });
-  document.getElementById('submit').style.display = '';
+}
+
+function showError(msg) {
+  const card = $('stage');
+  card.replaceChildren(el('p', '', msg));
+  const retry = el('button', 'primary', 'Try again');
+  retry.addEventListener('click', start);
+  card.appendChild(retry);
+}
+
+function showQuestion() {
+  state.locked = false;
+  renderPipeline();
+  const q = state.questions[state.index];
+  const card = $('stage');
+  card.replaceChildren();
+
+  const top = el('div', 'top');
+  top.appendChild(el('span', 'tag', q.category));
+  top.appendChild(el('span', '', 'Question ' + (state.index + 1) + ' of ' + state.questions.length));
+  card.appendChild(top);
+  card.appendChild(el('p', 'question', q.question));
+
+  const list = el('div', 'options');
+  q.options.forEach((text, i) => {
+    const b = el('button', 'option');
+    b.type = 'button';
+    b.appendChild(el('span', 'letter', 'ABCD'[i]));
+    b.appendChild(el('span', '', text));
+    b.addEventListener('click', () => choose(i, b, list));
+    list.appendChild(b);
+  });
+  card.appendChild(list);
+  card.appendChild(el('div', 'feedback'));
+}
+
+async function choose(i, btn, list) {
+  if (state.locked) return;
+  state.locked = true;
+  const q = state.questions[state.index];
+  let out;
+  try {
+    const res = await fetch('/api/answer', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: q.id, choice: i })
+    });
+    if (!res.ok) throw new Error('bad response');
+    out = await res.json();
+  } catch (e) {
+    state.locked = false;
+    showError('Could not reach the server. Check that the backend is running.');
+    return;
+  }
+
+  const buttons = list.querySelectorAll('.option');
+  buttons.forEach((b) => (b.disabled = true));
+  buttons[out.answer].classList.add('correct');
+  if (!out.correct) btn.classList.add('wrong');
+
+  state.results[state.index] = { correct: out.correct, category: q.category };
+  renderPipeline();
+
+  const fb = $('stage').querySelector('.feedback');
+  fb.className = 'feedback show ' + (out.correct ? 'ok' : 'bad');
+  fb.replaceChildren(el('strong', '', out.correct ? 'Correct. ' : 'Not quite. '), el('span', '', out.explanation));
+
+  const last = state.index === state.questions.length - 1;
+  const next = el('button', 'primary', last ? 'See result' : 'Next question');
+  next.addEventListener('click', () => {
+    state.index++;
+    last ? showResult() : showQuestion();
+  });
+  $('stage').appendChild(next);
+  next.focus();
+}
+
+function showResult() {
+  renderPipeline();
+  const total = state.questions.length;
+  const passed = state.results.filter((r) => r.correct).length;
+  const ok = passed >= Math.ceil(total * 0.7);
+
+  const card = $('stage');
+  card.replaceChildren();
+  card.appendChild(el('h2', 'verdict ' + (ok ? 'ok' : 'bad'), ok ? 'Build passed' : 'Build failed'));
+  card.appendChild(el('p', 'score', passed + ' of ' + total + ' checks passed. You need ' + Math.ceil(total * 0.7) + ' to pass.'));
+
+  const rows = el('ul', 'stages');
+  state.results.forEach((r) => {
+    const li = el('li', r.correct ? 'ok' : 'bad');
+    li.appendChild(el('span', '', r.category));
+    li.appendChild(el('span', '', r.correct ? 'passed' : 'failed'));
+    rows.appendChild(li);
+  });
+  card.appendChild(rows);
+
+  const again = el('button', 'primary', 'Run it again');
+  again.addEventListener('click', start);
+  card.appendChild(again);
+}
+
+async function start() {
+  try {
+    const res = await fetch('/api/questions');
+    if (!res.ok) throw new Error('bad response');
+    state.questions = shuffle(await res.json());
+  } catch (e) {
+    showError('Could not load the questions. Check that the backend is running.');
+    return;
+  }
+  state.index = 0;
+  state.results = [];
+  showQuestion();
 }
 
 async function loadInfo() {
-  const res = await fetch('/api/info');
-  const info = await res.json();
-  document.getElementById('footer').textContent =
-    'Served by pod: ' + info.pod + '  |  Version: ' + info.version;
+  try {
+    const info = await (await fetch('/api/info')).json();
+    $('pod').textContent = info.pod;
+    $('ver').textContent = info.version;
+  } catch (e) {
+    $('pod').textContent = 'unknown';
+    $('ver').textContent = 'unknown';
+  }
 }
 
-document.getElementById('submit').addEventListener('click', async () => {
-  const answers = {};
-  questions.forEach(q => {
-    const picked = document.querySelector('input[name="q' + q.id + '"]:checked');
-    if (picked) answers[q.id] = Number(picked.value);
-  });
-  const res = await fetch('/api/submit', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({answers})
-  });
-  const out = await res.json();
-  document.getElementById('result').textContent = 'Score: ' + out.score + ' / ' + out.total;
-  loadInfo();
-});
-
-loadQuiz();
+start();
 loadInfo();
 </script>
 </body>
 </html>
-
