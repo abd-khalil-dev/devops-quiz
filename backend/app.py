@@ -2,10 +2,36 @@ import os
 import random
 import socket
 from flask import Flask, jsonify, request
-
+import psycopg
 app = Flask(__name__)
 
 # (category, level, question, options, correct option index, interview answer)
+DATABASE_URL = os.getenv("DATABASE_URL")
+_schema_ready = False
+
+
+def get_conn():
+    if not DATABASE_URL:
+        raise RuntimeError("DATABASE_URL is not set")
+    return psycopg.connect(DATABASE_URL, connect_timeout=3)
+
+
+def ensure_schema():
+    global _schema_ready
+    if _schema_ready:
+        return
+    with get_conn() as conn:
+        conn.execute(
+            """CREATE TABLE IF NOT EXISTS scores (
+                   id SERIAL PRIMARY KEY,
+                   name VARCHAR(20) NOT NULL,
+                   category VARCHAR(30) NOT NULL,
+                   correct INT NOT NULL,
+                   total INT NOT NULL,
+                   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+               )"""
+        )
+    _schema_ready = True
 RAW = [
     # ---------------- Docker ----------------
     ("Docker", "Basic", "What is the difference between a Docker image and a container?",
@@ -317,7 +343,64 @@ def answer():
         answer=right,
         explanation=q["explanation"],
     )
+@app.get("/api/ready")
+def ready():
+    try:
+        ensure_schema()
+        return jsonify(status="ready")
+    except Exception:
+        return jsonify(status="database unavailable"), 503
 
+
+@app.post("/api/scores")
+def add_score():
+    data = request.get_json(silent=True) or {}
+    name = str(data.get("name", "")).strip()[:20]
+    category = str(data.get("category") or "Mixed")
+    correct, total = data.get("correct"), data.get("total")
+    valid = (
+        bool(name)
+        and type(correct) is int
+        and type(total) is int
+        and 1 <= total <= len(QUESTIONS)
+        and 0 <= correct <= total
+        and (category == "Mixed" or category in CATEGORIES)
+    )
+    if not valid:
+        return jsonify(error="invalid score"), 400
+    try:
+        ensure_schema()
+        with get_conn() as conn:
+            conn.execute(
+                "INSERT INTO scores (name, category, correct, total) VALUES (%s, %s, %s, %s)",
+                (name, category, correct, total),
+            )
+    except Exception:
+        return jsonify(error="database unavailable"), 503
+    return jsonify(saved=True), 201
+
+
+@app.get("/api/leaderboard")
+def leaderboard():
+    limit = max(1, min(request.args.get("limit", default=10, type=int), 50))
+    try:
+        ensure_schema()
+        with get_conn() as conn:
+            rows = conn.execute(
+                """SELECT name, category, correct, total, created_at
+                   FROM scores
+                   ORDER BY (correct::float / total) DESC, total DESC, created_at ASC
+                   LIMIT %s""",
+                (limit,),
+            ).fetchall()
+    except Exception:
+        return jsonify(error="database unavailable"), 503
+    return jsonify([
+        {"name": r[0], "category": r[1], "correct": r[2], "total": r[3],
+         "percent": round(100 * r[2] / r[3]), "date": r[4].date().isoformat()}
+        for r in rows
+    ]
+)
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)

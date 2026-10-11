@@ -44,3 +44,17 @@ def test_answer_checks_the_text():
 def test_unknown_question_returns_404():
     r = client.post("/api/answer", json={"id": 9999, "choice": "x"})
     assert r.status_code == 404
+def test_score_rejects_bad_input():
+    bad = [
+        {},
+        {"name": "", "correct": 1, "total": 10},
+        {"name": "Ali", "correct": 11, "total": 10},
+        {"name": "Ali", "correct": 5, "total": 10, "category": "Nope"},
+        {"name": "Ali", "correct": "5", "total": 10},
+    ]
+    for body in bad:
+        assert client.post("/api/scores", json=body).status_code == 400
+
+
+def test_ready_reports_missing_database():
+    assert client.get("/api/ready").status_code == 503

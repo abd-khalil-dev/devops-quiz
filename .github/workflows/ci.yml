@@ -37,6 +37,7 @@ jobs:
           curl -fs http://localhost:8080/api/health
           curl -fs http://localhost:8080/api/categories
           curl -fs http://localhost:8080/ | grep -q "DevOps Interview Quiz"
+          curl -fs http://localhost:8080/api/leaderboard
       - name: Show logs on failure
         if: failure()
         run: docker compose logs

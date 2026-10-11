@@ -1,8 +1,26 @@
 services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: quiz
+      POSTGRES_USER: quiz
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-quizdev}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U quiz -d quiz"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
   backend:
     build: ./backend
     environment:
       - APP_VERSION=1.0
+      - DATABASE_URL=postgresql://quiz:${POSTGRES_PASSWORD:-quizdev}@db:5432/quiz
+    depends_on:
+      db:
+        condition: service_healthy
 
   frontend:
     build: ./frontend
@@ -10,3 +28,6 @@ services:
       - "8080:80"
     depends_on:
       - backend
+
+volumes:
+  pgdata:
