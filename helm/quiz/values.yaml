@@ -19,3 +19,8 @@ frontend:
   image:
     repository: ghcr.io/abd-khalil-dev/devops-quiz-frontend
     tag: latest
+
+ingress:
+  enabled: true
+  className: nginx
+  host: quiz.localhost
