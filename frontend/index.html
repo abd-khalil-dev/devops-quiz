@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DevOps Quiz</title>
+<style>
+  body{font-family:system-ui,sans-serif;max-width:640px;margin:40px auto;padding:0 16px;background:#0f172a;color:#e2e8f0}
+  h1{color:#38bdf8}
+  .q{background:#1e293b;padding:16px;border-radius:10px;margin-bottom:14px}
+  label{display:block;margin:6px 0;cursor:pointer}
+  button{background:#38bdf8;color:#0f172a;border:0;padding:10px 20px;border-radius:8px;font-weight:600;cursor:pointer}
+  #result{font-size:1.2rem;margin-top:16px}
+  footer{margin-top:40px;font-size:.85rem;color:#94a3b8;border-top:1px solid #334155;padding-top:12px}
+</style>
+</head>
+<body>
+  <h1>DevOps Quiz</h1>
+  <div id="quiz">Loading...</div>
+  <button id="submit" style="display:none">Submit</button>
+  <div id="result"></div>
+  <footer id="footer">...</footer>
+
+<script>
+let questions = [];
+
+async function loadQuiz() {
+  const res = await fetch('/api/questions');
+  questions = await res.json();
+  const box = document.getElementById('quiz');
+  box.innerHTML = '';
+  questions.forEach(q => {
+    const div = document.createElement('div');
+    div.className = 'q';
+    div.innerHTML = '<p><b>' + q.id + '. ' + q.question + '</b></p>' +
+      q.options.map((o, i) =>
+        '<label><input type="radio" name="q' + q.id + '" value="' + i + '"> ' + o + '</label>'
+      ).join('');
+    box.appendChild(div);
+  });
+  document.getElementById('submit').style.display = '';
+}
+
+async function loadInfo() {
+  const res = await fetch('/api/info');
+  const info = await res.json();
+  document.getElementById('footer').textContent =
+    'Served by pod: ' + info.pod + '  |  Version: ' + info.version;
+}
+
+document.getElementById('submit').addEventListener('click', async () => {
+  const answers = {};
+  questions.forEach(q => {
+    const picked = document.querySelector('input[name="q' + q.id + '"]:checked');
+    if (picked) answers[q.id] = Number(picked.value);
+  });
+  const res = await fetch('/api/submit', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({answers})
+  });
+  const out = await res.json();
+  document.getElementById('result').textContent = 'Score: ' + out.score + ' / ' + out.total;
+  loadInfo();
+});
+
+loadQuiz();
+loadInfo();
+</script>
+</body>
+</html>
+
