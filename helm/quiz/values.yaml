@@ -1,0 +1,21 @@
+# Secret must exist before install (created with kubectl, never stored in Git)
+secretName: db-secret
+
+db:
+  image: postgres:16-alpine
+  name: quiz
+  user: quiz
+  storage: 1Gi
+
+backend:
+  replicas: 2
+  appVersion: "1.0"
+  image:
+    repository: ghcr.io/abd-khalil-dev/devops-quiz-backend
+    tag: latest
+
+frontend:
+  replicas: 1
+  image:
+    repository: ghcr.io/abd-khalil-dev/devops-quiz-frontend
+    tag: latest

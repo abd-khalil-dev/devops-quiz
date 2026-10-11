@@ -1,0 +1,5 @@
+Quiz installed as release {{ .Release.Name }} in namespace {{ .Release.Namespace }}.
+
+Open it with:
+  kubectl port-forward svc/frontend 8081:80 -n {{ .Release.Namespace }}
+Then visit http://localhost:8081

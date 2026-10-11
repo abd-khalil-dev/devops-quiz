@@ -17,6 +17,12 @@ jobs:
       - name: Install dependencies
         run: pip install -r backend/requirements.txt -r backend/requirements-dev.txt
       - name: Run tests
+      - name: Install dependencies
+        run: pip install -r backend/requirements.txt -r backend/requirements-dev.txt
+      - name: Run tests
+        run: pytest backend -q
+      - name: Lint Helm chart
+        run: helm lint helm/quiz
         run: pytest backend -q
 
   build:

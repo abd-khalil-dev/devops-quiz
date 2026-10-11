@@ -42,7 +42,7 @@ Open http://localhost:8080
 - [x] CI with GitHub Actions (tests, build, smoke test)
 - [x] Push images to a registry
 - [x] PostgreSQL with a leaderboard (StatefulSet on Kubernetes comes next)
-- [ ] Kubernetes manifests and a Helm chart
+- [x] Kubernetes manifests and a Helm chart
 - [ ] Terraform (VPC, EC2) and Ansible on AWS
 - [ ] CD: automatic deploy on every push
 - [ ] Monitoring with Prometheus and Grafana
