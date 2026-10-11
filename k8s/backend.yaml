@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: quiz
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+      - name: backend
+        image: ghcr.io/abd-khalil-dev/devops-quiz-backend:latest
+        ports:
+        - containerPort: 5000
+        env:
+        - name: APP_VERSION
+          value: "1.0"
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: db-secret
+              key: POSTGRES_PASSWORD
+        - name: DATABASE_URL
+          value: "postgresql://quiz:$(POSTGRES_PASSWORD)@db:5432/quiz"
+        readinessProbe:
+          httpGet:
+            path: /api/ready
+            port: 5000
+          periodSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /api/health
+            port: 5000
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            memory: 192Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  namespace: quiz
+spec:
+  selector:
+    app: backend
+  ports:
+  - port: 5000
+    targetPort: 5000
