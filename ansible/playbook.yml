@@ -1,0 +1,38 @@
+- name: Prepare the quiz server
+  hosts: quiz
+  become: true
+  tasks:
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
+
+    - name: Install basic packages
+      ansible.builtin.apt:
+        name: [curl, git, jq]
+        state: present
+
+    - name: Install k3s
+      ansible.builtin.shell: curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="--write-kubeconfig-mode 644" sh -
+      args:
+        creates: /usr/local/bin/k3s
+
+    - name: Wait until the node is Ready
+      ansible.builtin.command: k3s kubectl get nodes
+      register: nodes
+      until: "' Ready' in nodes.stdout"
+      retries: 20
+      delay: 6
+      changed_when: false
+
+    - name: Install Helm
+      ansible.builtin.shell: curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+      args:
+        creates: /usr/local/bin/helm
+
+    - name: Point kubectl at the k3s config for the ubuntu user
+      ansible.builtin.lineinfile:
+        path: /home/ubuntu/.bashrc
+        line: export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+        owner: ubuntu
+        state: present
