@@ -6,3 +6,5 @@ __pycache__/
 *.tfstate.backup
 .terraform/
 .pytest_cache/
+tfplan
+*.tfplan
