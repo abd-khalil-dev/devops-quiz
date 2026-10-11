@@ -44,3 +44,4 @@ Open http://localhost:8080
 - [ ] Terraform (VPC, EC2) and Ansible on AWS
 - [ ] CD: automatic deploy on every push
 - [ ] Monitoring with Prometheus and Grafana
+“Built as a DevOps learning project.”
