@@ -173,7 +173,7 @@ resource "aws_iam_role" "github_deploy" {
       Condition = {
         StringEquals = {
           "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
-          "token.actions.githubusercontent.com:sub" = "repo:${var.github_repo}:ref:refs/heads/main"
+          "token.actions.githubusercontent.com:sub" = var.github_sub
         }
       }
     }]
@@ -205,4 +205,10 @@ resource "aws_iam_role_policy" "github_deploy" {
 
 output "github_role_arn" {
   value = aws_iam_role.github_deploy.arn
+}
+
+variable "github_sub" {
+  description = "OIDC subject GitHub sends (includes owner and repo IDs)"
+  type        = string
+  default     = "repo:abd-khalil-dev@318783742/devops-quiz@1414521964:ref:refs/heads/main"
 }
