@@ -81,3 +81,56 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+
+  deploy:
+    needs: publish
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ap-south-1
+      - name: Find the server
+        id: server
+        run: |
+          IID=$(aws ec2 describe-instances \
+            --filters "Name=tag:Name,Values=quiz-server" "Name=instance-state-name,Values=running" \
+            --query "Reservations[0].Instances[0].InstanceId" --output text)
+          if [ -z "$IID" ] || [ "$IID" = "None" ]; then
+            echo "No running server found"
+            exit 1
+          fi
+          echo "iid=$IID" >> "$GITHUB_OUTPUT"
+      - name: Deploy with Helm over SSM
+        env:
+          IID: ${{ steps.server.outputs.iid }}
+        run: |
+          TAG="sha-${GITHUB_SHA::7}"
+          SCRIPT="set -e
+          export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+          sudo -u ubuntu git -C /home/ubuntu/devops-quiz pull --ff-only
+          helm upgrade quiz /home/ubuntu/devops-quiz/helm/quiz -n quiz --reset-then-reuse-values --set backend.image.tag=$TAG --set frontend.image.tag=$TAG --set backend.appVersion=$TAG --wait --timeout 5m
+          kubectl get pods -n quiz"
+          CMD=$(aws ssm send-command \
+            --instance-ids "$IID" \
+            --document-name AWS-RunShellScript \
+            --comment "Deploy $TAG" \
+            --parameters "$(jq -n --arg c "$SCRIPT" '{commands:[$c]}')" \
+            --query "Command.CommandId" --output text)
+          echo "Command: $CMD"
+          for i in $(seq 1 60); do
+            STATUS=$(aws ssm get-command-invocation --command-id "$CMD" --instance-id "$IID" --query Status --output text 2>/dev/null || echo Pending)
+            case "$STATUS" in
+              Success|Failed|Cancelled|TimedOut) break ;;
+            esac
+            sleep 6
+          done
+          aws ssm get-command-invocation --command-id "$CMD" --instance-id "$IID" --query StandardOutputContent --output text
+          aws ssm get-command-invocation --command-id "$CMD" --instance-id "$IID" --query StandardErrorContent --output text
+          echo "Final status: $STATUS"
+          [ "$STATUS" = "Success" ]

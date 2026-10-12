@@ -96,6 +96,7 @@ resource "aws_instance" "quiz" {
   ami                    = data.aws_ami.ubuntu.id
   instance_type          = var.instance_type
   key_name               = aws_key_pair.quiz.key_name
+  iam_instance_profile   = aws_iam_instance_profile.quiz.name
   vpc_security_group_ids = [aws_security_group.quiz.id]
 
   root_block_device {
@@ -119,4 +120,89 @@ output "public_ip" {
 
 output "ssh_command" {
   value = "ssh -i ~/.ssh/quiz-aws ubuntu@${aws_instance.quiz.public_ip}"
+}
+
+resource "aws_iam_role" "ec2_ssm" {
+  name = "quiz-ec2-ssm"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect    = "Allow"
+      Principal = { Service = "ec2.amazonaws.com" }
+      Action    = "sts:AssumeRole"
+    }]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "ssm_core" {
+  role       = aws_iam_role.ec2_ssm.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+}
+
+resource "aws_iam_instance_profile" "quiz" {
+  name = "quiz-ec2-ssm"
+  role = aws_iam_role.ec2_ssm.name
+}
+
+output "instance_id" {
+  value = aws_instance.quiz.id
+}
+
+variable "github_repo" {
+  description = "GitHub repo allowed to deploy (owner/name)"
+  type        = string
+  default     = "abd-khalil-dev/devops-quiz"
+}
+
+data "aws_caller_identity" "current" {}
+data "aws_region" "current" {}
+
+resource "aws_iam_openid_connect_provider" "github" {
+  url            = "https://token.actions.githubusercontent.com"
+  client_id_list = ["sts.amazonaws.com"]
+}
+
+resource "aws_iam_role" "github_deploy" {
+  name = "quiz-github-deploy"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect    = "Allow"
+      Principal = { Federated = aws_iam_openid_connect_provider.github.arn }
+      Action    = "sts:AssumeRoleWithWebIdentity"
+      Condition = {
+        StringEquals = {
+          "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
+          "token.actions.githubusercontent.com:sub" = "repo:${var.github_repo}:ref:refs/heads/main"
+        }
+      }
+    }]
+  })
+}
+
+resource "aws_iam_role_policy" "github_deploy" {
+  name = "deploy-via-ssm"
+  role = aws_iam_role.github_deploy.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = ["ec2:DescribeInstances", "ssm:GetCommandInvocation", "ssm:ListCommandInvocations"]
+        Resource = "*"
+      },
+      {
+        Effect = "Allow"
+        Action = "ssm:SendCommand"
+        Resource = [
+          "arn:aws:ec2:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:instance/*",
+          "arn:aws:ssm:${data.aws_region.current.name}::document/AWS-RunShellScript"
+        ]
+      }
+    ]
+  })
+}
+
+output "github_role_arn" {
+  value = aws_iam_role.github_deploy.arn
 }
