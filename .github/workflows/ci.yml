@@ -90,6 +90,15 @@ jobs:
       id-token: write
       contents: read
     steps:
+      - name: Debug OIDC claim
+        env:
+          ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
+        run: |
+          if [ -z "$ROLE_ARN" ]; then echo "SECRET AWS_ROLE_ARN IS EMPTY"; fi
+          echo "secret starts with: ${ROLE_ARN:0:13}"
+          echo "secret role name:  ${ROLE_ARN##*/}"
+          TOKEN=$(curl -s -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=sts.amazonaws.com" | jq -r .value)
+          echo "$TOKEN" | cut -d. -f2 | tr '_-' '/+' | awk '{ while (length($0)%4) $0=$0"="; print }' | base64 -d | jq '{sub, aud, repository}'
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
         with:
