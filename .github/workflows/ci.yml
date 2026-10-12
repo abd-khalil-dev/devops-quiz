@@ -106,6 +106,18 @@ jobs:
             exit 1
           fi
           echo "iid=$IID" >> "$GITHUB_OUTPUT"
+      - name: Wait for SSM agent
+        env:
+          IID: ${{ steps.server.outputs.iid }}
+        run: |
+          for i in $(seq 1 40); do
+            PING=$(aws ssm describe-instance-information --filters "Key=InstanceIds,Values=$IID" --query "InstanceInformationList[0].PingStatus" --output text 2>/dev/null || true)
+            echo "attempt $i: SSM status = ${PING:-none}"
+            [ "$PING" = "Online" ] && exit 0
+            sleep 10
+          done
+          echo "Server is not managed by SSM yet"
+          exit 1
       - name: Deploy with Helm over SSM
         env:
           IID: ${{ steps.server.outputs.iid }}

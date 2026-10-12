@@ -188,7 +188,7 @@ resource "aws_iam_role_policy" "github_deploy" {
     Statement = [
       {
         Effect   = "Allow"
-        Action   = ["ec2:DescribeInstances", "ssm:GetCommandInvocation", "ssm:ListCommandInvocations"]
+        Action   = ["ec2:DescribeInstances", "ssm:GetCommandInvocation", "ssm:ListCommandInvocations", "ssm:DescribeInstanceInformation"]
         Resource = "*"
       },
       {
