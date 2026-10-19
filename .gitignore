@@ -9,3 +9,4 @@ __pycache__/
 tfplan
 *.tfplan
 ansible/inventory.ini
+*.tfvars

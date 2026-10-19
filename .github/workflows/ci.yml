@@ -102,11 +102,13 @@ jobs:
             --filters "Name=tag:Name,Values=quiz-server" "Name=instance-state-name,Values=running" \
             --query "Reservations[0].Instances[0].InstanceId" --output text)
           if [ -z "$IID" ] || [ "$IID" = "None" ]; then
-            echo "No running server found"
-            exit 1
+            echo "::notice::No running server, skipping deploy"
+            echo "iid=" >> "$GITHUB_OUTPUT"
+            exit 0
           fi
           echo "iid=$IID" >> "$GITHUB_OUTPUT"
       - name: Wait for SSM agent
+        if: steps.server.outputs.iid != ''
         env:
           IID: ${{ steps.server.outputs.iid }}
         run: |
@@ -119,14 +121,16 @@ jobs:
           echo "Server is not managed by SSM yet"
           exit 1
       - name: Deploy with Helm over SSM
+        if: steps.server.outputs.iid != ''
         env:
           IID: ${{ steps.server.outputs.iid }}
         run: |
           TAG="sha-${GITHUB_SHA::7}"
           SCRIPT="set -e
           export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+          export HOME=/root
           sudo -u ubuntu git -C /home/ubuntu/devops-quiz pull --ff-only
-          helm upgrade quiz /home/ubuntu/devops-quiz/helm/quiz -n quiz --reset-then-reuse-values --set backend.image.tag=$TAG --set frontend.image.tag=$TAG --set backend.appVersion=$TAG --wait --timeout 5m
+          helm upgrade quiz /home/ubuntu/devops-quiz/helm/quiz -n quiz --reset-then-reuse-values --set backend.image.tag=$TAG --set frontend.image.tag=$TAG --set backend.appVersion=$TAG --atomic --timeout 5m
           kubectl get pods -n quiz"
           CMD=$(aws ssm send-command \
             --instance-ids "$IID" \

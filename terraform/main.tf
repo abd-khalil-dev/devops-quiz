@@ -195,8 +195,8 @@ resource "aws_iam_role_policy" "github_deploy" {
         Effect = "Allow"
         Action = "ssm:SendCommand"
         Resource = [
-          "arn:aws:ec2:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:instance/*",
-          "arn:aws:ssm:${data.aws_region.current.name}::document/AWS-RunShellScript"
+          "arn:aws:ec2:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:instance/*",
+          "arn:aws:ssm:${data.aws_region.current.region}::document/AWS-RunShellScript"
         ]
       }
     ]
