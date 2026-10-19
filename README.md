@@ -75,7 +75,7 @@ After the first run, every push to `main` deploys by itself (OIDC and SSM).
 1. **test**: pytest and `helm lint`
 2. **build**: builds both images, starts the stack and smoke-tests it through nginx
 3. **publish**: pushes images to GHCR tagged with the commit SHA
-4. **deploy**: assumes an AWS role through OIDC, then runs `helm upgrade --atomic` on the server with SSM. A failed release rolls back by itself, and the job is skipped when the server is down
+4. **deploy**: assumes an AWS role through OIDC, then runs `helm upgrade --atomic` on the server with SSM. A failed release rolls back by itself. The deploy job needs the stack to be up (`scripts/up.sh`), because `scripts/down.sh` also destroys the AWS role it assumes
 
 ## API
 
