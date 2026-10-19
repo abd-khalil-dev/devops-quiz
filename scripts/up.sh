@@ -27,6 +27,14 @@ server ansible_host=$IP ansible_user=ubuntu ansible_ssh_private_key_file=$KEY
 EOF
 (cd ansible && ansible-playbook playbook.yml)
 
+echo "==> SSM: waiting for the agent to register"
+ssh $SSH_OPTS ubuntu@"$IP" "sudo snap restart amazon-ssm-agent" >/dev/null
+for i in $(seq 1 20); do
+  P=$(aws ssm describe-instance-information --region ap-south-1 --query "InstanceInformationList[0].PingStatus" --output text 2>/dev/null || true)
+  [ "$P" = "Online" ] && break
+  sleep 6
+done
+
 echo "==> 4/5 Helm: deploying the quiz"
 ssh $SSH_OPTS ubuntu@"$IP" "IP=$IP bash -s" <<'REMOTE'
 set -euo pipefail
